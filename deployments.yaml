@@ -1,0 +1,501 @@
+# SmartKhet — Kubernetes Deployment Manifests
+# =============================================
+# Namespace, Deployments, Services, HPA for all microservices
+# Apply: kubectl apply -f kubernetes/
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: smartkhet
+  labels:
+    app: smartkhet
+    env: production
+
+---
+# ── Config Map ────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smartkhet-config
+  namespace: smartkhet
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "kafka-service:9092"
+  REDIS_URL: "redis://redis-service:6379"
+  ML_INFERENCE_URL: "http://ml-service:8080"
+  AWS_REGION: "ap-south-1"
+  S3_BUCKET_NAME: "smartkhet-images-prod"
+
+---
+# ── Farmer Service ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: farmer-service
+  namespace: smartkhet
+  labels:
+    app: farmer-service
+    version: "1.0.0"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: farmer-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: farmer-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8001"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: farmer-service
+        image: smartkhet/farmer-service:1.0.0
+        ports:
+        - containerPort: 8001
+        envFrom:
+        - configMapRef:
+            name: smartkhet-config
+        - secretRef:
+            name: smartkhet-secrets
+        env:
+        - name: PORT
+          value: "8001"
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          failureThreshold: 3
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values: [farmer-service]
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: farmer-service
+  namespace: smartkhet
+spec:
+  selector:
+    app: farmer-service
+  ports:
+  - port: 8001
+    targetPort: 8001
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: farmer-service-hpa
+  namespace: smartkhet
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: farmer-service
+  minReplicas: 3
+  maxReplicas: 30
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 60
+
+---
+# ── Disease Service ────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: disease-service
+  namespace: smartkhet
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: disease-service
+  template:
+    metadata:
+      labels:
+        app: disease-service
+    spec:
+      containers:
+      - name: disease-service
+        image: smartkhet/disease-service:1.0.0
+        ports:
+        - containerPort: 8003
+        envFrom:
+        - configMapRef:
+            name: smartkhet-config
+        - secretRef:
+            name: smartkhet-secrets
+        env:
+        - name: PORT
+          value: "8003"
+        resources:
+          requests:
+            cpu: "300m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 15
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: disease-service
+  namespace: smartkhet
+spec:
+  selector:
+    app: disease-service
+  ports:
+  - port: 8003
+    targetPort: 8003
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: disease-service-hpa
+  namespace: smartkhet
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: disease-service
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 65
+
+---
+# ── ML Inference Service (GPU node pool) ──────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-inference-service
+  namespace: smartkhet
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ml-inference-service
+  template:
+    metadata:
+      labels:
+        app: ml-inference-service
+    spec:
+      nodeSelector:
+        node-type: gpu              # Schedule only on GPU nodes
+      tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Exists"
+        effect: "NoSchedule"
+      containers:
+      - name: ml-inference
+        image: smartkhet/ml-inference:1.0.0
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: smartkhet-config
+        - secretRef:
+            name: smartkhet-secrets
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "4Gi"
+            nvidia.com/gpu: "1"
+          limits:
+            cpu: "4000m"
+            memory: "8Gi"
+            nvidia.com/gpu: "1"
+        volumeMounts:
+        - name: model-storage
+          mountPath: /models
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 15
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-service
+  namespace: smartkhet
+spec:
+  selector:
+    app: ml-inference-service
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ml-inference-hpa
+  namespace: smartkhet
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ml-inference-service
+  minReplicas: 2
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+
+---
+# ── Market Service ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: market-service
+  namespace: smartkhet
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: market-service
+  template:
+    metadata:
+      labels:
+        app: market-service
+    spec:
+      containers:
+      - name: market-service
+        image: smartkhet/market-service:1.0.0
+        ports:
+        - containerPort: 8004
+        envFrom:
+        - configMapRef:
+            name: smartkhet-config
+        - secretRef:
+            name: smartkhet-secrets
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8004
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: market-service
+  namespace: smartkhet
+spec:
+  selector:
+    app: market-service
+  ports:
+  - port: 8004
+    targetPort: 8004
+  type: ClusterIP
+
+---
+# ── WhatsApp Bot ───────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whatsapp-bot
+  namespace: smartkhet
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: whatsapp-bot
+  template:
+    metadata:
+      labels:
+        app: whatsapp-bot
+    spec:
+      containers:
+      - name: whatsapp-bot
+        image: smartkhet/whatsapp-bot:1.0.0
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: smartkhet-config
+        - secretRef:
+            name: smartkhet-secrets
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "300m"
+            memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whatsapp-bot
+  namespace: smartkhet
+spec:
+  selector:
+    app: whatsapp-bot
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: ClusterIP
+
+---
+# ── Persistent Volume for ML Models ───────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-pvc
+  namespace: smartkhet
+spec:
+  accessModes:
+  - ReadWriteMany   # Multiple pods can read models
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+# ── Ingress (Kong) ────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: smartkhet-ingress
+  namespace: smartkhet
+  annotations:
+    konghq.com/strip-path: "true"
+    konghq.com/plugins: "rate-limiting,jwt-auth,cors"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: kong
+  tls:
+  - hosts:
+    - api.smartkhet.in
+    secretName: smartkhet-tls
+  rules:
+  - host: api.smartkhet.in
+    http:
+      paths:
+      - path: /api/v1/farmers
+        pathType: Prefix
+        backend:
+          service:
+            name: farmer-service
+            port:
+              number: 8001
+      - path: /api/v1/advisory
+        pathType: Prefix
+        backend:
+          service:
+            name: crop-advisory-service
+            port:
+              number: 8002
+      - path: /api/v1/disease
+        pathType: Prefix
+        backend:
+          service:
+            name: disease-service
+            port:
+              number: 8003
+      - path: /api/v1/market
+        pathType: Prefix
+        backend:
+          service:
+            name: market-service
+            port:
+              number: 8004
+      - path: /api/v1/nlp
+        pathType: Prefix
+        backend:
+          service:
+            name: nlp-voice-service
+            port:
+              number: 8005
+      - path: /webhook
+        pathType: Prefix
+        backend:
+          service:
+            name: whatsapp-bot
+            port:
+              number: 3000
