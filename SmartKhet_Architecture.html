@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartKhet — System Architecture by Axora</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --soil: #1a0f00;
+    --bark: #2d1a06;
+    --leaf-dark: #0d2b1a;
+    --leaf: #1a5c34;
+    --leaf-light: #27ae60;
+    --sprout: #52d68a;
+    --sun: #f4c542;
+    --harvest: #e07b30;
+    --sky: #4a9eda;
+    --mist: #b8d4c8;
+    --cream: #f5f0e8;
+    --parchment: #ede5d0;
+    --text: #1a1209;
+    --text-muted: #5a4a35;
+    --mono: 'JetBrains Mono', monospace;
+    --serif: 'Playfair Display', serif;
+    --body: 'Lora', serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--body);
+    background: var(--cream);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    background: var(--leaf-dark);
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(26,92,52,0.6) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(244,197,66,0.15) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2327ae60' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 120px;
+    background: linear-gradient(to bottom, transparent, var(--cream));
+  }
+  .agent-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--sprout);
+    background: rgba(82,214,138,0.1);
+    border: 1px solid rgba(82,214,138,0.3);
+    padding: 6px 18px;
+    border-radius: 2px;
+    margin-bottom: 32px;
+    text-transform: uppercase;
+    display: inline-block;
+    animation: fadeDown 0.8s ease both;
+  }
+  .hero-title {
+    font-family: var(--serif);
+    font-size: clamp(52px, 10vw, 96px);
+    font-weight: 900;
+    color: var(--cream);
+    line-height: 1;
+    letter-spacing: -2px;
+    animation: fadeDown 0.8s 0.15s ease both;
+  }
+  .hero-title span { color: var(--sun); }
+  .hero-subtitle {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--mist);
+    letter-spacing: 0.2em;
+    margin-top: 16px;
+    text-transform: uppercase;
+    animation: fadeDown 0.8s 0.3s ease both;
+  }
+  .hero-meta {
+    display: flex;
+    gap: 32px;
+    margin-top: 48px;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: fadeDown 0.8s 0.45s ease both;
+  }
+  .hero-pill {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 10px 20px;
+    border-radius: 2px;
+    color: var(--mist);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+  }
+  .hero-pill strong { color: var(--sun); display: block; font-size: 20px; letter-spacing: 0; }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 28px; }
+  .section {
+    padding: 80px 0;
+    border-bottom: 1px solid rgba(26,92,52,0.12);
+  }
+  .section:last-child { border-bottom: none; }
+
+  /* ── SECTION HEADER ── */
+  .sec-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    color: var(--leaf-light);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .sec-title {
+    font-family: var(--serif);
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 700;
+    color: var(--leaf-dark);
+    line-height: 1.2;
+    margin-bottom: 24px;
+  }
+  .sec-title span { color: var(--leaf-light); }
+  .sec-intro {
+    font-size: 16px;
+    color: var(--text-muted);
+    max-width: 720px;
+    margin-bottom: 48px;
+    line-height: 1.8;
+  }
+
+  /* ── ARCH DIAGRAM ── */
+  .arch-diagram {
+    background: var(--leaf-dark);
+    border-radius: 4px;
+    padding: 36px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--mist);
+    overflow-x: auto;
+    position: relative;
+    margin-bottom: 48px;
+  }
+  .arch-diagram pre { white-space: pre; }
+  .arch-l1 { color: var(--sun); font-weight: 700; }
+  .arch-l2 { color: var(--sprout); }
+  .arch-l3 { color: var(--sky); }
+  .arch-l4 { color: #ff9a6c; }
+  .arch-l5 { color: var(--mist); opacity: 0.6; }
+  .arch-arrow { color: var(--harvest); }
+
+  /* ── LAYER CARDS ── */
+  .layer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 48px;
+  }
+  .layer-card {
+    border: 1px solid;
+    border-radius: 4px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .layer-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.08); }
+  .layer-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .lc-frontend { border-color: rgba(74,158,218,0.3); background: rgba(74,158,218,0.04); }
+  .lc-frontend::before { background: var(--sky); }
+  .lc-gateway { border-color: rgba(244,197,66,0.3); background: rgba(244,197,66,0.04); }
+  .lc-gateway::before { background: var(--sun); }
+  .lc-backend { border-color: rgba(39,174,96,0.3); background: rgba(39,174,96,0.04); }
+  .lc-backend::before { background: var(--leaf-light); }
+  .lc-ai { border-color: rgba(224,123,48,0.3); background: rgba(224,123,48,0.04); }
+  .lc-ai::before { background: var(--harvest); }
+  .lc-data { border-color: rgba(82,214,138,0.3); background: rgba(82,214,138,0.04); }
+  .lc-data::before { background: var(--sprout); }
+  .lc-infra { border-color: rgba(180,100,220,0.3); background: rgba(180,100,220,0.04); }
+  .lc-infra::before { background: #b464dc; }
+  .layer-icon { font-size: 28px; margin-bottom: 12px; }
+  .layer-name {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .layer-title {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--leaf-dark);
+    margin-bottom: 14px;
+  }
+  .layer-list {
+    list-style: none;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .layer-list li {
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .layer-list li::before { content: '→'; color: var(--leaf-light); flex-shrink: 0; margin-top: 1px; }
+  .layer-list li:last-child { border-bottom: none; }
+
+  /* ── TECH STACK TABLE ── */
+  .stack-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin-bottom: 48px;
+  }
+  .stack-table th {
+    background: var(--leaf-dark);
+    color: var(--sun);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 14px 20px;
+    text-align: left;
+  }
+  .stack-table td {
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(26,92,52,0.1);
+    vertical-align: top;
+  }
+  .stack-table tr:nth-child(even) td { background: rgba(26,92,52,0.03); }
+  .stack-table tr:hover td { background: rgba(244,197,66,0.06); }
+  .stack-table td:first-child {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--leaf);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .stack-table td:nth-child(2) { color: var(--text); font-weight: 600; }
+  .stack-table td:nth-child(3) { color: var(--text-muted); font-size: 12.5px; }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin: 2px 2px 2px 0;
+  }
+  .tag-green { background: rgba(39,174,96,0.12); color: var(--leaf); }
+  .tag-blue { background: rgba(74,158,218,0.12); color: var(--sky); }
+  .tag-orange { background: rgba(224,123,48,0.15); color: var(--harvest); }
+  .tag-yellow { background: rgba(244,197,66,0.15); color: #b8860b; }
+
+  /* ── DATA FLOW ── */
+  .flow-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+    margin-bottom: 48px;
+  }
+  .flow-steps::before {
+    content: '';
+    position: absolute;
+    left: 22px;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--leaf-light), var(--sprout), var(--sun));
+  }
+  .flow-step {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    padding: 20px 0;
+  }
+  .flow-num {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--leaf-dark);
+    color: var(--sun);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    z-index: 1;
+    border: 2px solid var(--leaf-light);
+  }
+  .flow-content { padding-top: 8px; }
+  .flow-title {
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--leaf-dark);
+    margin-bottom: 4px;
+  }
+  .flow-desc { font-size: 13.5px; color: var(--text-muted); }
+  .flow-code {
+    margin-top: 8px;
+    background: var(--leaf-dark);
+    color: var(--sprout);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 8px 14px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+
+  /* ── FEATURE GRID ── */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .feat-card {
+    background: white;
+    border: 1px solid rgba(26,92,52,0.1);
+    padding: 24px;
+    border-radius: 4px;
+    transition: box-shadow 0.2s;
+  }
+  .feat-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
+  .feat-icon { font-size: 32px; margin-bottom: 10px; }
+  .feat-title {
+    font-family: var(--serif);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--leaf-dark);
+    margin-bottom: 8px;
+  }
+  .feat-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ── MVPVSFULL ── */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 48px;
+  }
+  @media(max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+  .compare-card {
+    padding: 32px;
+    border-radius: 4px;
+    border: 2px solid;
+  }
+  .compare-mvp {
+    border-color: var(--sky);
+    background: rgba(74,158,218,0.04);
+  }
+  .compare-full {
+    border-color: var(--leaf-light);
+    background: rgba(39,174,96,0.04);
+  }
+  .compare-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .compare-mvp .compare-label { color: var(--sky); }
+  .compare-full .compare-label { color: var(--leaf-light); }
+  .compare-title {
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--leaf-dark);
+    margin-bottom: 16px;
+  }
+  .compare-list { list-style: none; font-size: 13px; color: var(--text-muted); }
+  .compare-list li { padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; gap: 8px; }
+  .compare-list li:last-child { border-bottom: none; }
+  .check-mvp { color: var(--sky); }
+  .check-full { color: var(--leaf-light); }
+
+  /* ── MONETIZATION ── */
+  .mono-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .mono-card {
+    border-radius: 4px;
+    padding: 24px;
+    text-align: center;
+  }
+  .mono-card:nth-child(1) { background: linear-gradient(135deg, rgba(26,92,52,0.1), rgba(82,214,138,0.1)); border: 1px solid rgba(82,214,138,0.3); }
+  .mono-card:nth-child(2) { background: linear-gradient(135deg, rgba(244,197,66,0.1), rgba(224,123,48,0.1)); border: 1px solid rgba(244,197,66,0.4); }
+  .mono-card:nth-child(3) { background: linear-gradient(135deg, rgba(74,158,218,0.1), rgba(180,100,220,0.1)); border: 1px solid rgba(74,158,218,0.3); }
+  .mono-card:nth-child(4) { background: linear-gradient(135deg, rgba(224,123,48,0.1), rgba(244,197,66,0.1)); border: 1px solid rgba(224,123,48,0.3); }
+  .mono-icon { font-size: 36px; margin-bottom: 10px; }
+  .mono-title { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--leaf-dark); margin-bottom: 8px; }
+  .mono-desc { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ── SCALABILITY ── */
+  .scale-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  @media(max-width: 700px) { .scale-row { grid-template-columns: 1fr; } }
+  .scale-card {
+    background: var(--leaf-dark);
+    color: var(--cream);
+    padding: 28px;
+    border-radius: 4px;
+    text-align: center;
+  }
+  .scale-num {
+    font-family: var(--serif);
+    font-size: 40px;
+    font-weight: 900;
+    color: var(--sun);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .scale-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; color: var(--mist); text-transform: uppercase; }
+
+  /* ── SECURITY ── */
+  .sec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .sec-card {
+    border-left: 3px solid var(--leaf-light);
+    padding: 20px 24px;
+    background: white;
+    border-radius: 0 4px 4px 0;
+  }
+  .sec-card-title { font-family: var(--serif); font-size: 16px; font-weight: 700; color: var(--leaf-dark); margin-bottom: 8px; }
+  .sec-card-body { font-size: 13px; color: var(--text-muted); line-height: 1.7; }
+
+  /* ── CALLOUT ── */
+  .callout {
+    background: var(--leaf-dark);
+    border-left: 4px solid var(--sun);
+    padding: 24px 32px;
+    border-radius: 0 4px 4px 0;
+    margin-bottom: 32px;
+    color: var(--mist);
+    font-size: 14px;
+  }
+  .callout strong { color: var(--sun); font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; display: block; margin-bottom: 8px; }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: var(--leaf-dark);
+    padding: 48px 28px;
+    text-align: center;
+    color: var(--mist);
+  }
+  .footer-logo {
+    font-family: var(--serif);
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--cream);
+    margin-bottom: 8px;
+  }
+  .footer-logo span { color: var(--sun); }
+  .footer-sub { font-family: var(--mono); font-size: 11px; letter-spacing: 0.25em; color: var(--sprout); text-transform: uppercase; margin-bottom: 24px; }
+  .footer-note { font-size: 13px; color: rgba(184,212,200,0.5); }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width: 768px) {
+    .layer-grid { grid-template-columns: 1fr; }
+    .arch-diagram { font-size: 10px; }
+    .stack-table { font-size: 12px; }
+  }
+
+  /* ── TOC NAV ── */
+  .toc {
+    background: white;
+    border: 1px solid rgba(26,92,52,0.15);
+    border-radius: 4px;
+    padding: 28px 32px;
+    margin-bottom: 48px;
+    display: inline-block;
+    min-width: 320px;
+  }
+  .toc-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--leaf-light);
+    margin-bottom: 14px;
+  }
+  .toc ol { padding-left: 20px; }
+  .toc li { padding: 4px 0; font-size: 13px; }
+  .toc a { color: var(--leaf); text-decoration: none; font-family: var(--body); }
+  .toc a:hover { color: var(--leaf-light); text-decoration: underline; }
+
+  /* ── INLINE CODE ── */
+  code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: rgba(26,92,52,0.08);
+    color: var(--leaf);
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+
+  /* Divider */
+  .divider {
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--leaf-light), transparent);
+    margin: 8px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="agent-badge">✦ Designed by Axora — AI Architecture Intelligence</div>
+  <h1 class="hero-title">Smart<span>Khet</span></h1>
+  <p class="hero-subtitle">Production-Ready System Architecture · AI-Powered Agricultural Advisory Platform</p>
+  <div class="hero-meta">
+    <div class="hero-pill"><strong>₹12T+</strong>Indian Agri Market</div>
+    <div class="hero-pill"><strong>140M+</strong>Target Farmers</div>
+    <div class="hero-pill"><strong>22+</strong>Languages Supported</div>
+    <div class="hero-pill"><strong>Offline-First</strong>Rural Ready</div>
+  </div>
+</header>
+
+<!-- TABLE OF CONTENTS -->
+<div class="section" id="toc-sec">
+  <div class="container">
+    <div class="sec-label">Navigation</div>
+    <h2 class="sec-title">Table of <span>Contents</span></h2>
+    <div class="toc">
+      <div class="toc-title">Section Index</div>
+      <ol>
+        <li><a href="#vision">Vision & Problem Statement</a></li>
+        <li><a href="#architecture">High-Level System Architecture</a></li>
+        <li><a href="#layers">Architectural Layers — Detailed</a></li>
+        <li><a href="#techstack">Technology Stack</a></li>
+        <li><a href="#aiml">AI/ML Components</a></li>
+        <li><a href="#dataflows">Data Flows</a></li>
+        <li><a href="#offline">Offline-First & Low-Connectivity</a></li>
+        <li><a href="#scalability">Scalability & Deployment</a></li>
+        <li><a href="#security">Security Architecture</a></li>
+        <li><a href="#mvp">MVP vs Full Scale</a></li>
+        <li><a href="#monetization">Monetization Strategy</a></li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- VISION -->
+<div class="section" id="vision">
+  <div class="container">
+    <div class="sec-label">01 — Foundation</div>
+    <h2 class="sec-title">Vision & Problem <span>Statement</span></h2>
+    <p class="sec-intro">Indian farmers lose 20–40% of potential income due to lack of timely agronomic advice, poor market intelligence, and delayed disease detection. SmartKhet bridges this gap with an AI-first, offline-capable, multilingual agricultural brain accessible from a ₹5,000 Android phone.</p>
+    <div class="feature-grid">
+      <div class="feat-card">
+        <div class="feat-icon">🌾</div>
+        <div class="feat-title">Crop Intelligence</div>
+        <div class="feat-desc">AI-powered recommendations based on soil type, weather, historical yield, and local market demand — personalized per farm.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔬</div>
+        <div class="feat-title">Disease Detection</div>
+        <div class="feat-desc">Computer vision model detects 50+ crop diseases from a single smartphone photo. Runs on-device with no internet required.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">💬</div>
+        <div class="feat-title">Voice-First Interface</div>
+        <div class="feat-desc">Speak in Hindi, Bhojpuri, Marathi, or Punjabi. SmartKhet understands and responds in the farmer's native tongue.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📊</div>
+        <div class="feat-title">Mandi Intelligence</div>
+        <div class="feat-desc">Real-time and predictive mandi prices help farmers decide when to sell, where to sell, and how to hold for maximum profit.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🌦️</div>
+        <div class="feat-title">Hyperlocal Weather</div>
+        <div class="feat-desc">5-day hyperlocal forecasts with advisory overlays — "rain expected Thursday, delay irrigation" type actionable nudges.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📵</div>
+        <div class="feat-title">Works Offline</div>
+        <div class="feat-desc">Core features available without internet. Syncs data automatically when connectivity is restored. SMS fallback always available.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE -->
+<div class="section" id="architecture">
+  <div class="container">
+    <div class="sec-label">02 — Blueprint</div>
+    <h2 class="sec-title">High-Level System <span>Architecture</span></h2>
+    <p class="sec-intro">A layered microservices architecture designed for India's connectivity realities — cloud-native at the core, edge-capable at the endpoints.</p>
+
+    <div class="arch-diagram">
+<pre>
+╔══════════════════════════════════════════════════════════════════════════════════════╗
+║                         <span class="arch-l1">SMARTKHET PLATFORM ARCHITECTURE</span>                           ║
+║                         Designed by Axora · v1.0 Production                         ║
+╚══════════════════════════════════════════════════════════════════════════════════════╝
+
+<span class="arch-l1">┌─────────────────────────────── LAYER 1: CLIENT TIER ──────────────────────────────┐</span>
+│                                                                                     │
+│  <span class="arch-l3">┌──────────────┐</span>  <span class="arch-l3">┌──────────────┐</span>  <span class="arch-l3">┌──────────────┐</span>  <span class="arch-l3">┌──────────────┐</span>          │
+│  <span class="arch-l3">│ Android App  │</span>  <span class="arch-l3">│ WhatsApp Bot │</span>  <span class="arch-l3">│  IVR / Call  │</span>  <span class="arch-l3">│  SMS Agent   │</span>          │
+│  <span class="arch-l3">│  (Offline)   │</span>  <span class="arch-l3">│  (Meta API)  │</span>  <span class="arch-l3">│  (Twilio)    │</span>  <span class="arch-l3">│  (Fallback)  │</span>          │
+│  <span class="arch-l3">└──────┬───────┘</span>  <span class="arch-l3">└──────┬───────┘</span>  <span class="arch-l3">└──────┬───────┘</span>  <span class="arch-l3">└──────┬───────┘</span>          │
+│         │                  │                  │                  │                  │
+└─────────┼──────────────────┼──────────────────┼──────────────────┼──────────────────┘
+          │                  │                  │                  │
+          <span class="arch-arrow">▼                  ▼                  ▼                  ▼</span>
+
+<span class="arch-l1">┌─────────────────────── LAYER 2: API GATEWAY & EDGE ────────────────────────────────┐</span>
+│                                                                                     │
+│  <span class="arch-l2">┌──────────────────────────────────────────────────────────────────────────────┐</span>  │
+│  <span class="arch-l2">│              Kong API Gateway (Rate Limit · Auth · SSL · Routing)           │</span>  │
+│  <span class="arch-l2">└──────────────────────────────────────────────────────────────────────────────┘</span>  │
+│         │                  │                  │                  │                  │
+│  <span class="arch-l2">┌──────┴──────┐</span>  <span class="arch-l2">┌──────┴──────┐</span>  <span class="arch-l2">┌──────┴──────┐</span>  <span class="arch-l2">┌──────┴──────┐</span>           │
+│  <span class="arch-l2">│  JWT Auth   │</span>  <span class="arch-l2">│  CDN/Cache  │</span>  <span class="arch-l2">│  Load Bal.  │</span>  <span class="arch-l2">│  Webhooks   │</span>           │
+│  <span class="arch-l2">└─────────────┘</span>  <span class="arch-l2">└─────────────┘</span>  <span class="arch-l2">└─────────────┘</span>  <span class="arch-l2">└─────────────┘</span>           │
+└──────────────────────────────────────────────────────────────────────────────────── ┘
+                                        <span class="arch-arrow">▼</span>
+
+<span class="arch-l1">┌─────────────────────── LAYER 3: MICROSERVICES BACKEND ─────────────────────────────┐</span>
+│                                                                                     │
+│  <span class="arch-l4">┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐</span>            │
+│  <span class="arch-l4">│   Farmer    │  │   Crop Adv  │  │  Disease    │  │  Market     │</span>            │
+│  <span class="arch-l4">│   Service   │  │   Service   │  │  Service    │  │  Service    │</span>            │
+│  <span class="arch-l4">└─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘</span>            │
+│  <span class="arch-l4">┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐</span>            │
+│  <span class="arch-l4">│   Weather   │  │  NLP/Voice  │  │  Notif.     │  │  Analytics  │</span>            │
+│  <span class="arch-l4">│   Service   │  │   Service   │  │  Service    │  │  Service    │</span>            │
+│  <span class="arch-l4">└─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘</span>            │
+│                                                                                     │
+│  <span class="arch-l2">Event Bus: Apache Kafka  │  Service Mesh: Istio  │  Orchestration: Kubernetes</span>    │
+└──────────────────────────────────────────────────────────────────────────────────── ┘
+                                        <span class="arch-arrow">▼</span>
+
+<span class="arch-l1">┌─────────────────────────── LAYER 4: AI / ML LAYER ─────────────────────────────────┐</span>
+│                                                                                     │
+│  <span class="arch-l3">┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────────┐</span>  │
+│  <span class="arch-l3">│  Crop Recommend │  │  Disease Vision │  │  NLP Engine (Indic Languages)   │</span>  │
+│  <span class="arch-l3">│  (XGBoost/RF)   │  │  (EfficientNet) │  │  (IndicBERT + Whisper)         │</span>  │
+│  <span class="arch-l3">└─────────────────┘  └─────────────────┘  └─────────────────────────────────┘</span>  │
+│  <span class="arch-l3">┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────────┐</span>  │
+│  <span class="arch-l3">│  Market Predict │  │  Advisory LLM   │  │  Edge Model (TFLite on-device)  │</span>  │
+│  <span class="arch-l3">│  (LSTM/Prophet) │  │  (Fine-tuned)   │  │  Disease + Crop ID offline      │</span>  │
+│  <span class="arch-l3">└─────────────────┘  └─────────────────┘  └─────────────────────────────────┘</span>  │
+│                      ML Platform: MLflow · Ray Serve · BentoML                     │
+└──────────────────────────────────────────────────────────────────────────────────── ┘
+                                        <span class="arch-arrow">▼</span>
+
+<span class="arch-l1">┌─────────────────────────── LAYER 5: DATA LAYER ────────────────────────────────────┐</span>
+│                                                                                     │
+│  <span class="arch-l2">┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐</span>            │
+│  <span class="arch-l2">│ PostgreSQL  │  │   MongoDB   │  │    Redis    │  │  S3 / GCS   │</span>            │
+│  <span class="arch-l2">│ (Farmers,   │  │  (Soil,     │  │  (Cache,    │  │  (Images,   │</span>            │
+│  <span class="arch-l2">│  Advisory)  │  │   Sensor)   │  │   Session)  │  │   Models)   │</span>            │
+│  <span class="arch-l2">└─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘</span>            │
+│  <span class="arch-l2">┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐</span>            │
+│  <span class="arch-l2">│  ClickHouse │  │  Pinecone   │  │  TimescaleDB│  │  SQLite     │</span>            │
+│  <span class="arch-l2">│  (Analytics)│  │  (Vector)   │  │  (IoT/time) │  │  (On-device)│</span>            │
+│  <span class="arch-l2">└─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘</span>            │
+│                                                                                     │
+│  External APIs: IMD Weather · Agmarknet Mandi · eNAM · ICAR Crop DB · NBSS Soil   │
+└──────────────────────────────────────────────────────────────────────────────────── ┘
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- LAYERS DETAILED -->
+<div class="section" id="layers">
+  <div class="container">
+    <div class="sec-label">03 — Decomposition</div>
+    <h2 class="sec-title">Architectural Layers — <span>Detailed</span></h2>
+    <p class="sec-intro">Each layer is independently scalable, independently deployable, and communicates via well-defined APIs and events.</p>
+
+    <div class="layer-grid">
+      <div class="layer-card lc-frontend">
+        <div class="layer-icon">📱</div>
+        <div class="layer-name">Layer 1</div>
+        <div class="layer-title">Frontend / Client Layer</div>
+        <ul class="layer-list">
+          <li><strong>Android App</strong> — React Native + offline SQLite cache. Edge AI via TFLite. Voice UI via on-device ASR.</li>
+          <li><strong>WhatsApp Bot</strong> — Meta Cloud API webhook. Handles images, audio, and text. No app install needed.</li>
+          <li><strong>IVR System</strong> — Twilio-powered voice call flow. DTMF + speech for zero-literacy users. Hindi/regional support.</li>
+          <li><strong>SMS Agent</strong> — Structured SMS commands (e.g., <code>KHET SOIL PH 6.2</code>). Works on feature phones.</li>
+          <li><strong>Progressive Web App</strong> — Lightweight browser fallback for semi-urban users.</li>
+        </ul>
+      </div>
+
+      <div class="layer-card lc-gateway">
+        <div class="layer-icon">🔀</div>
+        <div class="layer-name">Layer 2</div>
+        <div class="layer-title">API Gateway & Edge</div>
+        <ul class="layer-list">
+          <li><strong>Kong Gateway</strong> — Central entry point. Rate limiting, auth plugins, request routing by service.</li>
+          <li><strong>JWT + OAuth2</strong> — Phone-number based auth (OTP via MSG91). Farmer profile tokens with 30-day expiry.</li>
+          <li><strong>Cloudflare CDN</strong> — Static asset serving, DDoS protection, edge caching for static advisories.</li>
+          <li><strong>Request Routing</strong> — Path-based routing to microservices. <code>/api/v1/disease</code> → Disease Service.</li>
+          <li><strong>Webhook Manager</strong> — Handles incoming WhatsApp/Twilio events and fan-out to relevant services.</li>
+        </ul>
+      </div>
+
+      <div class="layer-card lc-backend">
+        <div class="layer-icon">⚙️</div>
+        <div class="layer-name">Layer 3</div>
+        <div class="layer-title">Backend Microservices</div>
+        <ul class="layer-list">
+          <li><strong>Farmer Service</strong> — Profile, land details, crop history, preferences. The source of farmer context.</li>
+          <li><strong>Crop Advisory Service</strong> — Integrates soil + weather + farmer profile to generate crop/fertilizer advice.</li>
+          <li><strong>Disease Detection Service</strong> — Receives image, routes to AI layer, returns diagnosis + remedy.</li>
+          <li><strong>Market Intelligence Service</strong> — Aggregates mandi data, runs price prediction, generates sell recommendations.</li>
+          <li><strong>Weather Service</strong> — Fetches IMD + OpenWeather data. Computes hyperlocal pin-code level forecasts.</li>
+          <li><strong>NLP/Voice Service</strong> — Receives audio, performs STT, intent extraction, routes to correct service.</li>
+          <li><strong>Notification Service</strong> — Manages push, WhatsApp, SMS, IVR outbound advisory notifications.</li>
+          <li><strong>Analytics Service</strong> — Usage telemetry, model performance tracking, A/B testing infrastructure.</li>
+        </ul>
+      </div>
+
+      <div class="layer-card lc-ai">
+        <div class="layer-icon">🧠</div>
+        <div class="layer-name">Layer 4</div>
+        <div class="layer-title">AI / ML Layer</div>
+        <ul class="layer-list">
+          <li><strong>Crop Recommender</strong> — XGBoost ensemble on soil NPK, pH, rainfall, temperature, market demand features.</li>
+          <li><strong>Disease Vision Model</strong> — EfficientNet-B4 trained on PlantVillage + custom Indian crop images (50+ diseases).</li>
+          <li><strong>Indic NLP Engine</strong> — IndicBERT for text understanding; OpenAI Whisper fine-tuned for Hindi/Bhojpuri/Marathi.</li>
+          <li><strong>Market Predictor</strong> — LSTM + Prophet time-series model on 5-year mandi price data per commodity per region.</li>
+          <li><strong>Advisory LLM</strong> — Fine-tuned LLaMA-3 or Mistral on agronomic knowledge base for conversational advice.</li>
+          <li><strong>Edge Models</strong> — TFLite quantized versions of disease + crop ID for on-device inference without internet.</li>
+        </ul>
+      </div>
+
+      <div class="layer-card lc-data">
+        <div class="layer-icon">🗄️</div>
+        <div class="layer-name">Layer 5</div>
+        <div class="layer-title">Data Layer</div>
+        <ul class="layer-list">
+          <li><strong>PostgreSQL</strong> — Farmer profiles, advisory history, subscriptions. Primary transactional store.</li>
+          <li><strong>MongoDB</strong> — Soil sensor readings, IoT device data, semi-structured agronomic datasets.</li>
+          <li><strong>Redis</strong> — Session cache, mandi price cache (TTL 15 min), advisory cache per geo-cluster.</li>
+          <li><strong>TimescaleDB</strong> — Time-series weather and soil moisture data. Hypertable partitioning by date.</li>
+          <li><strong>ClickHouse</strong> — Analytical queries on usage patterns, crop yield correlations, model accuracy metrics.</li>
+          <li><strong>Pinecone</strong> — Vector embeddings for semantic search of agronomic knowledge base and similar-case retrieval.</li>
+          <li><strong>SQLite (Device)</strong> — On-device local store for offline operation. Syncs with PostgreSQL when online.</li>
+          <li><strong>AWS S3 / GCS</strong> — Crop disease image store, trained model artifacts, bulk data exports.</li>
+        </ul>
+      </div>
+
+      <div class="layer-card lc-infra">
+        <div class="layer-icon">☁️</div>
+        <div class="layer-name">Layer 6</div>
+        <div class="layer-title">Cloud Infrastructure</div>
+        <ul class="layer-list">
+          <li><strong>AWS Mumbai (ap-south-1)</strong> — Primary region. EC2 + EKS for compute. RDS Aurora PostgreSQL.</li>
+          <li><strong>AWS Hyderabad (ap-south-2)</strong> — Secondary region for DR and read replicas. Low-latency for Deccan.</li>
+          <li><strong>Kubernetes (EKS)</strong> — All microservices containerized. HPA for auto-scaling. Helm chart deployments.</li>
+          <li><strong>Kafka (MSK)</strong> — Event streaming between microservices. Topics: soil.events, weather.events, disease.results.</li>
+          <li><strong>Terraform + ArgoCD</strong> — Infrastructure as Code. GitOps-based continuous deployment pipeline.</li>
+          <li><strong>Prometheus + Grafana</strong> — Full observability stack. Alerts on service latency and error rate thresholds.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TECH STACK -->
+<div class="section" id="techstack">
+  <div class="container">
+    <div class="sec-label">04 — Stack</div>
+    <h2 class="sec-title">Complete Technology <span>Stack</span></h2>
+    <p class="sec-intro">Chosen for performance, Indian developer talent pool availability, open-source sustainability, and cost-efficiency at rural scale.</p>
+
+    <table class="stack-table">
+      <thead>
+        <tr>
+          <th>Domain</th>
+          <th>Technology</th>
+          <th>Rationale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Mobile Frontend</td>
+          <td>React Native + Expo <span class="tag tag-blue">Primary</span></td>
+          <td>Cross-platform, large talent pool in India, offline-capable via MMKV + SQLite, TFLite integration via expo-modules.</td>
+        </tr>
+        <tr>
+          <td>WhatsApp Bot</td>
+          <td>Node.js + Meta Cloud API <span class="tag tag-green">Stable</span></td>
+          <td>Official Meta API with 98% uptime SLA. Supports media, buttons, lists. 530M+ WhatsApp users in India.</td>
+        </tr>
+        <tr>
+          <td>IVR System</td>
+          <td>Twilio Voice + TwiML <span class="tag tag-orange">Low-cost</span></td>
+          <td>₹0.0025/min rates in India. Supports Hindi TTS/STT. DTMF fallback for ultra-low-tech users.</td>
+        </tr>
+        <tr>
+          <td>API Gateway</td>
+          <td>Kong OSS + Konga Dashboard <span class="tag tag-green">Open Source</span></td>
+          <td>Plugin ecosystem, JWT auth, rate limiting, Kubernetes ingress controller native support.</td>
+        </tr>
+        <tr>
+          <td>Backend Services</td>
+          <td>Python FastAPI + Node.js <span class="tag tag-blue">Performant</span></td>
+          <td>FastAPI for ML-heavy services (async, Pydantic validation). Node.js for event-driven notification and bot services.</td>
+        </tr>
+        <tr>
+          <td>Event Streaming</td>
+          <td>Apache Kafka (AWS MSK) <span class="tag tag-yellow">Scalable</span></td>
+          <td>Decouples services. Handles 1M+ events/day. Topics for soil, weather, advisory, and disease events.</td>
+        </tr>
+        <tr>
+          <td>Container Orchestration</td>
+          <td>Kubernetes (EKS) + Helm <span class="tag tag-blue">Production</span></td>
+          <td>Auto-scaling pods, rolling deployments, service mesh via Istio. Helm charts for reproducible deploys.</td>
+        </tr>
+        <tr>
+          <td>Primary Database</td>
+          <td>PostgreSQL 16 (RDS Aurora) <span class="tag tag-green">Reliable</span></td>
+          <td>ACID compliant. PostGIS extension for farm geo-queries. Read replicas for analytics load.</td>
+        </tr>
+        <tr>
+          <td>Document Store</td>
+          <td>MongoDB Atlas <span class="tag tag-green">Flexible</span></td>
+          <td>Schema-less sensor data, crop images metadata, advisory templates. Atlas Search for full-text.</td>
+        </tr>
+        <tr>
+          <td>Cache Layer</td>
+          <td>Redis 7 (ElastiCache) <span class="tag tag-orange">Fast</span></td>
+          <td>Sub-ms mandi price reads, session storage, advisory template caching per crop-region combo.</td>
+        </tr>
+        <tr>
+          <td>Time Series</td>
+          <td>TimescaleDB (PostgreSQL ext.) <span class="tag tag-yellow">Efficient</span></td>
+          <td>Optimal for weather + soil sensor time-series. Compression, continuous aggregates, retention policies.</td>
+        </tr>
+        <tr>
+          <td>Analytics DB</td>
+          <td>ClickHouse (self-hosted) <span class="tag tag-orange">Columnar</span></td>
+          <td>100x faster analytical queries vs PostgreSQL on 100M+ row datasets. Farmer behaviour analytics.</td>
+        </tr>
+        <tr>
+          <td>Vector DB</td>
+          <td>Pinecone / pgvector <span class="tag tag-blue">AI-native</span></td>
+          <td>Semantic search over 500K+ agronomic knowledge chunks. Similar-case retrieval for advisory LLM context.</td>
+        </tr>
+        <tr>
+          <td>Object Storage</td>
+          <td>AWS S3 + CloudFront <span class="tag tag-green">Standard</span></td>
+          <td>Disease images (100GB/month est.), model artifacts, advisory media content. CDN for mobile delivery.</td>
+        </tr>
+        <tr>
+          <td>CV / Disease Model</td>
+          <td>EfficientNet-B4 (PyTorch) <span class="tag tag-orange">State-of-art</span></td>
+          <td>Best accuracy/param tradeoff for plant disease. TFLite conversion for edge deployment on Android.</td>
+        </tr>
+        <tr>
+          <td>NLP / Voice</td>
+          <td>Whisper + IndicBERT + LLaMA-3 <span class="tag tag-blue">Indic-first</span></td>
+          <td>Whisper for STT (Hindi/regional), IndicBERT for intent classification, fine-tuned LLaMA for advisory generation.</td>
+        </tr>
+        <tr>
+          <td>ML Platform</td>
+          <td>MLflow + Ray Serve <span class="tag tag-green">MLOps</span></td>
+          <td>MLflow for experiment tracking, model registry, versioning. Ray Serve for scalable model serving endpoints.</td>
+        </tr>
+        <tr>
+          <td>CI/CD</td>
+          <td>GitHub Actions + ArgoCD <span class="tag tag-yellow">GitOps</span></td>
+          <td>Automated testing, Docker build, ECR push, ArgoCD syncs to EKS. Full GitOps deployment pipeline.</td>
+        </tr>
+        <tr>
+          <td>Observability</td>
+          <td>Prometheus + Grafana + Loki <span class="tag tag-green">Full Stack</span></td>
+          <td>Metrics, dashboards, log aggregation. PagerDuty integration for production alerts.</td>
+        </tr>
+        <tr>
+          <td>SMS Gateway</td>
+          <td>MSG91 / Textlocal <span class="tag tag-orange">India-first</span></td>
+          <td>DLT-registered Indian SMS provider. Transactional + promotional routes. ₹0.10–0.16/SMS.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- AI/ML COMPONENTS -->
+<div class="section" id="aiml">
+  <div class="container">
+    <div class="sec-label">05 — Intelligence</div>
+    <h2 class="sec-title">AI/ML Component <span>Architecture</span></h2>
+    <p class="sec-intro">Six specialized models working in concert, with a clear separation between cloud-inference (complex) and edge-inference (fast, offline).</p>
+
+    <div class="arch-diagram">
+<pre>
+<span class="arch-l1">AI/ML PIPELINE OVERVIEW</span>
+
+<span class="arch-l2">INPUT SIGNALS</span>                    <span class="arch-l3">MODELS</span>                         <span class="arch-l4">OUTPUTS</span>
+─────────────                    ──────                         ───────
+Soil NPK/pH/Moisture ──────────► <span class="arch-l3">Crop Recommender</span>          ───► Crop list + confidence
+Weather Forecast     ──────────► <span class="arch-l3">(XGBoost Ensemble)</span>        ───► Fertilizer schedule
+Market Demand        ──────────► <span class="arch-l3">Feature: 28 input params</span>  ───► Irrigation plan
+
+Crop Photo (JPG)     ──────────► <span class="arch-l3">Disease Detector</span>          ───► Disease name (Hindi)
+Plant Leaf Image     ──────────► <span class="arch-l3">(EfficientNet-B4)</span>         ───► Confidence %
+                                 <span class="arch-l3">50 disease classes</span>         ───► Treatment steps
+                                 <span class="arch-l3">EDGE: TFLite 8-bit quant.</span>  ───► Organic/chemical options
+
+Audio (Hindi/etc.)   ──────────► <span class="arch-l3">Speech-to-Text</span>            ───► Transcription
+                                 <span class="arch-l3">(Whisper Fine-tuned)</span>      ───►
+                     ──────────► <span class="arch-l3">Intent Classifier</span>         ───► Intent + Entities
+                                 <span class="arch-l3">(IndicBERT)</span>               ───►
+                     ──────────► <span class="arch-l3">Advisory Generator</span>        ───► Natural language answer
+                                 <span class="arch-l3">(LLaMA-3 fine-tuned)</span>      ───► in farmer's language
+
+Mandi price history  ──────────► <span class="arch-l3">Price Forecaster</span>          ───► 7/14/30-day price pred.
+Commodity + region   ──────────► <span class="arch-l3">(LSTM + Facebook Prophet)  ───► Sell/hold signal
+Seasonal patterns    ──────────► <span class="arch-l3">Per commodity per district)</span> ───► Best mandi to sell at
+
+Farmer history       ──────────► <span class="arch-l3">Personalisation Engine</span>    ───► Ranked recommendations
+Past queries         ──────────► <span class="arch-l3">(Collaborative Filter +</span>   ───► Proactive nudges
+Peer farmer data     ──────────►  <span class="arch-l3">Content-based hybrid)</span>    ───► Personalized timing
+
+<span class="arch-l5">──────────────────────────────────────────────────────────────────────────────────────
+MODEL SERVING: Ray Serve → BentoML → REST APIs → Disease Service / Crop Advisory Service
+MODEL REGISTRY: MLflow (versioned artifacts in S3) ← CI triggers retrain when F1 drops
+EDGE DEPLOYMENT: TFLite models bundled in Android APK ← Updated OTA via Firebase App Distribution
+──────────────────────────────────────────────────────────────────────────────────────</span>
+</pre>
+    </div>
+
+    <div class="callout">
+      <strong>🔁 Model Retraining Pipeline</strong>
+      New disease images flagged by farmers → Human-in-the-loop labelling via Label Studio → Automated retraining triggered weekly via Airflow DAG → A/B test new model vs old on 10% traffic → Promote if F1 improves by >2% → TFLite export → OTA push to Android devices.
+    </div>
+  </div>
+</div>
+
+<!-- DATA FLOWS -->
+<div class="section" id="dataflows">
+  <div class="container">
+    <div class="sec-label">06 — Flows</div>
+    <h2 class="sec-title">Step-by-Step <span>Data Flows</span></h2>
+    <p class="sec-intro">Three critical user journeys mapped end-to-end, from input to advice delivery.</p>
+
+    <div class="sec-label" style="margin-top:0">Flow A — Image-Based Disease Detection</div>
+    <h3 style="font-family:var(--serif);font-size:22px;margin-bottom:24px;color:var(--leaf-dark)">📸 Farmer Photographs a Diseased Leaf</h3>
+
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-content">
+          <div class="flow-title">Capture & Pre-process</div>
+          <div class="flow-desc">Farmer takes photo in Android app. App resizes to 224×224px, runs EXIF metadata extraction (GPS, timestamp). If offline, queues in local job queue (SQLite).</div>
+          <div class="flow-code">→ TFLite edge model runs immediately for instant offline result</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-content">
+          <div class="flow-title">Upload to API Gateway</div>
+          <div class="flow-desc">App uploads JPEG + metadata (farmer ID, crop type, location) to <code>POST /api/v1/disease/analyze</code>. Kong validates JWT, rate-limits to 20 req/hour per farmer.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-content">
+          <div class="flow-title">Disease Service Routing</div>
+          <div class="flow-desc">Disease Service receives request. Stores image to S3 with UUID key. Publishes <code>disease.analyze.requested</code> event to Kafka topic with S3 key.</div>
+          <div class="flow-code">Kafka Topic: disease.events → Consumer: ML Inference Worker</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-content">
+          <div class="flow-title">ML Inference</div>
+          <div class="flow-desc">Ray Serve worker pulls image from S3, runs EfficientNet-B4 inference. Returns top-3 disease predictions with confidence scores and LIME explanation heatmap.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">5</div>
+        <div class="flow-content">
+          <div class="flow-title">Advisory Generation</div>
+          <div class="flow-desc">Disease name → Pinecone vector search → retrieves top-5 treatment documents → LLM synthesizes personalized treatment plan in farmer's preferred language (Hindi/regional).</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">6</div>
+        <div class="flow-content">
+          <div class="flow-title">Response Delivery</div>
+          <div class="flow-desc">Advisory returned synchronously (avg 2.3s cloud, 0.4s edge). Notification Service sends WhatsApp message and push notification. Stored in farmer's advisory history in PostgreSQL.</div>
+          <div class="flow-code">→ Farmer sees: Disease name + Hindi description + photo with highlighted regions + buy links for treatment</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider" style="margin:40px 0"></div>
+
+    <div class="sec-label">Flow B — Voice Query in Local Language</div>
+    <h3 style="font-family:var(--serif);font-size:22px;margin-bottom:24px;color:var(--leaf-dark)">🎙️ Farmer Speaks a Question in Bhojpuri</h3>
+
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-content">
+          <div class="flow-title">Audio Capture</div>
+          <div class="flow-desc">Farmer holds mic button, speaks query ("मेरे धान में पीलापन आ रहा है, क्या करूँ?"). App records 16kHz mono WAV, max 30 seconds. Sends to <code>POST /api/v1/nlp/voice</code>.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-content">
+          <div class="flow-title">Speech-to-Text (STT)</div>
+          <div class="flow-desc">NLP Service routes audio to Whisper fine-tuned on 2000+ hours of Hindi/Bhojpuri agricultural conversations. Returns transcript with language detection and confidence.</div>
+          <div class="flow-code">Whisper output: "mere dhan mein peelapan aa raha hai kya karun" [lang: hi-IN, conf: 0.92]</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-content">
+          <div class="flow-title">Intent Classification</div>
+          <div class="flow-desc">IndicBERT classifies intent: <code>disease.symptom.query</code>. Entity extraction: crop=धान (rice), symptom=पीलापन (yellowing). Routes to Crop Advisory + Disease Services.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-content">
+          <div class="flow-title">Context Enrichment</div>
+          <div class="flow-desc">Farmer Service fetches profile: Ramesh, Gorakhpur UP, 2.5 acres rice farm, current stage: vegetative. Weather Service: last 5 days cloudy, high humidity. Context packaged for LLM.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">5</div>
+        <div class="flow-content">
+          <div class="flow-title">Advisory Generation + TTS</div>
+          <div class="flow-desc">LLaMA-3 generates response. Text-to-Speech via Google TTS (Hindi, female voice). Audio MP3 returned + text version for WhatsApp/SMS delivery.</div>
+          <div class="flow-code">→ "Ramesh ji, dhaan mein peelapan aksar nitrogen ki kami se hota hai. Urea 30kg per acre daaien..."</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider" style="margin:40px 0"></div>
+
+    <div class="sec-label">Flow C — Daily Advisory Notification</div>
+    <h3 style="font-family:var(--serif);font-size:22px;margin-bottom:24px;color:var(--leaf-dark)">⏰ Automated 6 AM Farmer Advisory Push</h3>
+
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-content">
+          <div class="flow-title">Airflow DAG Triggered (5:30 AM IST)</div>
+          <div class="flow-desc">Airflow scheduler triggers <code>daily_advisory_dag</code>. Fetches all active farmer IDs by geo-cluster (district-level batches of 10,000 farmers).</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-content">
+          <div class="flow-title">Data Aggregation per Cluster</div>
+          <div class="flow-desc">Weather Service pulls 24h forecast for each district from IMD API. Mandi Service refreshes prices (Agmarknet API). Soil data from last 7 days averaged per farm cluster.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-content">
+          <div class="flow-title">Personalised Advisory Generation</div>
+          <div class="flow-desc">For each farmer: Recommendation engine scores relevance of 10 possible advice types. Top 3 selected. LLM generates 2-sentence personalised advisory in farmer's language.</div>
+          <div class="flow-code">Parallel processing: 10,000 advisories generated in ~4 minutes via Ray workers</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-content">
+          <div class="flow-title">Multi-Channel Delivery</div>
+          <div class="flow-desc">Notification Service routes: WhatsApp (if active) → Push notification (if app installed) → SMS (if neither). IVR callback for farmers who called in the last 7 days.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OFFLINE -->
+<div class="section" id="offline">
+  <div class="container">
+    <div class="sec-label">07 — Resilience</div>
+    <h2 class="sec-title">Offline-First & <span>Low-Connectivity</span></h2>
+    <p class="sec-intro">Designed for 2G connections (50kbps), intermittent internet, and complete offline usage. No connectivity should never mean no advice.</p>
+
+    <div class="arch-diagram">
+<pre>
+<span class="arch-l1">CONNECTIVITY TIER STRATEGY</span>
+
+<span class="arch-l2">TIER 0 — FULLY OFFLINE (No network)</span>
+  ├── TFLite disease detection runs on-device (EfficientNet 8-bit, ~12MB)
+  ├── TFLite crop recommendation (XGBoost converted, ~2MB)
+  ├── SQLite local DB: last 90 days of farmer advisories, mandi prices
+  ├── Pre-downloaded weather forecast (synced during last online session)
+  ├── Offline advisory templates: 200+ crop × disease × remedy combinations
+  └── Result: 80% of core features work fully offline
+
+<span class="arch-l3">TIER 1 — SMS FALLBACK (Feature phone / 0 data)</span>
+  ├── Farmer sends: "KHET SOIL 6.2 N-120 P-45 K-80" to shortcode 56070
+  ├── SMS Parser Service extracts structured data
+  ├── Advisory Engine generates 160-char SMS response
+  ├── Response: "Wheat recommended. Apply DAP 50kg+Urea 35kg per acre. Rain Fri."
+  └── Entire flow: <span class="arch-l4">avg 45 seconds, ₹0.15 cost per query</span>
+
+<span class="arch-l4">TIER 2 — LOW BANDWIDTH (2G/EDGE ~50kbps)</span>
+  ├── Compressed API payloads: JSON → MessagePack (60% size reduction)
+  ├── Image upload: Device compresses to 100KB before upload
+  ├── Progressive advisory delivery: text first, images lazy-loaded
+  ├── Delta sync: only changed data synced (not full dataset)
+  └── Background sync queue: user actions queued locally, sent when stronger signal
+
+<span class="arch-l2">TIER 3 — NORMAL CONNECTIVITY (4G/WiFi)</span>
+  ├── Full cloud inference (better accuracy than edge models)
+  ├── Real-time mandi prices, live weather
+  ├── Voice queries, image analysis, LLM advisory
+  └── Full sync of local SQLite with PostgreSQL
+
+<span class="arch-l5">SYNC PROTOCOL: CouchDB-style conflict resolution. Device timestamp wins for soil input.
+Server timestamp wins for mandi prices/weather. Advisory history merged with deduplication.</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- SCALABILITY -->
+<div class="section" id="scalability">
+  <div class="container">
+    <div class="sec-label">08 — Scale</div>
+    <h2 class="sec-title">Scalability & <span>Deployment</span></h2>
+    <p class="sec-intro">Built to grow from 10,000 farmers at launch to 10 million farmers at scale — without re-architecture.</p>
+
+    <div class="scale-row">
+      <div class="scale-card">
+        <div class="scale-num">10M</div>
+        <div class="scale-label">Target Farmers (Year 3)</div>
+      </div>
+      <div class="scale-card">
+        <div class="scale-num">5M</div>
+        <div class="scale-label">Daily Active Users Peak</div>
+      </div>
+      <div class="scale-card">
+        <div class="scale-num">50K</div>
+        <div class="scale-label">Req/second at Peak (6–8 AM)</div>
+      </div>
+    </div>
+
+    <div class="arch-diagram">
+<pre>
+<span class="arch-l1">KUBERNETES DEPLOYMENT TOPOLOGY</span>
+
+<span class="arch-l2">EKS Cluster (ap-south-1)</span>
+│
+├── <span class="arch-l3">Node Group: General (m5.2xlarge × 10–50 nodes, HPA enabled)</span>
+│   ├── farmer-service          (replicas: 3–30)
+│   ├── crop-advisory-service   (replicas: 3–20)
+│   ├── market-service          (replicas: 2–15)
+│   ├── notification-service    (replicas: 3–25)
+│   └── nlp-service             (replicas: 2–10)
+│
+├── <span class="arch-l4">Node Group: ML Inference (g4dn.xlarge GPU × 2–20 nodes)</span>
+│   ├── disease-ml-service      (replicas: 2–20, GPU-accelerated)
+│   ├── llm-advisory-service    (replicas: 1–8, T4 GPU per pod)
+│   └── whisper-stt-service     (replicas: 2–15)
+│
+├── <span class="arch-l2">Node Group: Data (r5.4xlarge × 3–10 nodes)</span>
+│   ├── redis-cluster           (6 nodes, sentinel mode)
+│   ├── kafka-brokers           (3 brokers, 12 partitions)
+│   └── clickhouse              (2 shards × 2 replicas)
+│
+└── <span class="arch-l5">Spot Instance Pools: 60% spot nodes for non-critical batch workloads (70% cost saving)</span>
+
+<span class="arch-l1">SCALING TRIGGERS (HPA)</span>
+  CPU > 70%       → Scale up pods (cooldown: 3 min)
+  CPU < 30%       → Scale down (cooldown: 10 min)
+  Kafka lag > 10K → Scale ML workers immediately
+  6–8 AM peak     → Pre-scheduled scale-up (predictive scaling via KEDA)
+
+<span class="arch-l1">CACHING STRATEGY</span>
+  L1: In-memory (pod-local, 500ms TTL) — hot advisory templates
+  L2: Redis (15 min TTL) — mandi prices per commodity per district
+  L3: CDN (CloudFront, 1h TTL) — static advisory content, model weights
+  DB: Read replicas — all analytical queries hit replica, not primary
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- SECURITY -->
+<div class="section" id="security">
+  <div class="container">
+    <div class="sec-label">09 — Trust</div>
+    <h2 class="sec-title">Security <span>Architecture</span></h2>
+    <p class="sec-intro">Farmer data is sacred. Multi-layered security, privacy-by-design, and compliance with India's PDPB (Personal Data Protection Bill).</p>
+
+    <div class="sec-grid">
+      <div class="sec-card">
+        <div class="sec-card-title">🔐 Authentication & Authorization</div>
+        <div class="sec-card-body">
+          Phone-number OTP via MSG91 as primary auth. JWT access tokens (15-min expiry) + refresh tokens (30-day, stored in httpOnly cookie). Role-based access: Farmer / Agri-officer / Admin. All service-to-service calls use mTLS via Istio service mesh.
+        </div>
+      </div>
+      <div class="sec-card">
+        <div class="sec-card-title">🛡️ Data Encryption</div>
+        <div class="sec-card-body">
+          All data in-transit: TLS 1.3 enforced. Data at-rest: AES-256 encryption on RDS and S3. Farmer PII (Aadhaar-linked data) stored encrypted with customer-managed KMS keys. Crop images stored with randomised UUIDs — no farmer ID in URL.
+        </div>
+      </div>
+      <div class="sec-card">
+        <div class="sec-card-title">🕵️ Privacy by Design</div>
+        <div class="sec-card-body">
+          Data minimisation — collect only what's needed for advisory. Explicit consent flows in app in local language. Right to deletion: full data purge within 72 hours of request. Anonymised data for model training — no PII in training sets. PDPB-ready architecture.
+        </div>
+      </div>
+      <div class="sec-card">
+        <div class="sec-card-title">🔒 API Security</div>
+        <div class="sec-card-body">
+          Kong rate limiting: 100 req/min per farmer. OWASP Top-10 mitigations in place. SQL injection prevention via parameterised queries only. Input validation via Pydantic schemas at every service boundary. Regular VAPT (quarterly) by third-party firm.
+        </div>
+      </div>
+      <div class="sec-card">
+        <div class="sec-card-title">📡 Network Security</div>
+        <div class="sec-card-body">
+          All services in private VPC subnets. Only API Gateway exposed via public ALB. VPN required for ops access. Security Groups: least-privilege port rules. AWS GuardDuty for threat detection. CloudTrail for full audit log of API calls.
+        </div>
+      </div>
+      <div class="sec-card">
+        <div class="sec-card-title">📱 Device Security</div>
+        <div class="sec-card-body">
+          Android app: SSL pinning to prevent MITM. Root detection — warn user on compromised device. Local SQLite database encrypted with SQLCipher. No hardcoded API keys — all secrets via AWS Secrets Manager pulled at pod startup.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MVP VS FULL -->
+<div class="section" id="mvp">
+  <div class="container">
+    <div class="sec-label">10 — Roadmap</div>
+    <h2 class="sec-title">MVP vs <span>Full Scale</span></h2>
+    <p class="sec-intro">A phased approach that generates revenue and data from Day 1, while building towards the full vision over 18 months.</p>
+
+    <div class="compare-grid">
+      <div class="compare-card compare-mvp">
+        <div class="compare-label">Phase 1 — MVP</div>
+        <div class="compare-title">Launch in 90 Days</div>
+        <ul class="compare-list">
+          <li><span class="check-mvp">✓</span> Android app (React Native, basic UI)</li>
+          <li><span class="check-mvp">✓</span> Crop recommendation (XGBoost, 20 crops)</li>
+          <li><span class="check-mvp">✓</span> Disease detection (20 diseases, cloud-only)</li>
+          <li><span class="check-mvp">✓</span> Hindi voice query (Whisper cloud API)</li>
+          <li><span class="check-mvp">✓</span> Mandi prices (Agmarknet integration)</li>
+          <li><span class="check-mvp">✓</span> WhatsApp bot (basic text + image)</li>
+          <li><span class="check-mvp">✓</span> SMS advisory (keyword-based)</li>
+          <li><span class="check-mvp">✓</span> OTP auth + basic farmer profile</li>
+          <li><span class="check-mvp">✓</span> Daily advisory push notification</li>
+          <li><span class="check-mvp">✓</span> 2 microservices (monolith-lite acceptable)</li>
+          <li><span class="check-mvp">✓</span> AWS EC2 + RDS (no Kubernetes yet)</li>
+          <li><span class="check-mvp">✓</span> Target: 50,000 farmers, 3 states</li>
+        </ul>
+        <div style="margin-top:20px;padding:12px;background:rgba(74,158,218,0.1);border-radius:3px;font-size:12px;color:var(--text-muted);">
+          <strong style="color:var(--sky)">Est. Cost:</strong> ₹25–40L build + ₹3L/month infra<br>
+          <strong style="color:var(--sky)">Timeline:</strong> 3 months with 8-person team
+        </div>
+      </div>
+
+      <div class="compare-card compare-full">
+        <div class="compare-label">Phase 2 + 3 — Full Scale</div>
+        <div class="compare-title">Production at 18 Months</div>
+        <ul class="compare-list">
+          <li><span class="check-full">✓</span> All MVP features + below</li>
+          <li><span class="check-full">✓</span> Edge AI (TFLite, fully offline)</li>
+          <li><span class="check-full">✓</span> 22 regional languages (IndicBERT)</li>
+          <li><span class="check-full">✓</span> 50+ disease detection model</li>
+          <li><span class="check-full">✓</span> IVR system for zero-literacy users</li>
+          <li><span class="check-full">✓</span> Market price prediction (7-day)</li>
+          <li><span class="check-full">✓</span> IoT soil sensor integration</li>
+          <li><span class="check-full">✓</span> Personalised recommendation engine</li>
+          <li><span class="check-full">✓</span> Full microservices on Kubernetes</li>
+          <li><span class="check-full">✓</span> MLOps pipeline (auto-retraining)</li>
+          <li><span class="check-full">✓</span> Input credit / insurance marketplace</li>
+          <li><span class="check-full">✓</span> Target: 5M farmers, pan-India</li>
+        </ul>
+        <div style="margin-top:20px;padding:12px;background:rgba(39,174,96,0.1);border-radius:3px;font-size:12px;color:var(--text-muted);">
+          <strong style="color:var(--leaf-light)">Est. Cost:</strong> ₹2–4Cr total build + ₹40–80L/month infra<br>
+          <strong style="color:var(--leaf-light)">Timeline:</strong> 18 months, 30-person team
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MONETIZATION -->
+<div class="section" id="monetization">
+  <div class="container">
+    <div class="sec-label">11 — Revenue</div>
+    <h2 class="sec-title">Monetization <span>Strategy</span></h2>
+    <p class="sec-intro">Multi-stream revenue model that keeps the core product free for farmers while monetising the ecosystem around them — inspired by Jio's playbook for rural India.</p>
+
+    <div class="mono-grid">
+      <div class="mono-card">
+        <div class="mono-icon">💊</div>
+        <div class="mono-title">AgriInput Marketplace</div>
+        <div class="mono-desc">3–8% commission on seeds, fertilisers, pesticides sold via in-app recommendations. Input companies pay for "recommended" placement. Est. ₹1,200/farmer/year GMV.</div>
+      </div>
+      <div class="mono-card">
+        <div class="mono-icon">🏦</div>
+        <div class="mono-title">Financial Services</div>
+        <div class="mono-desc">Kisan Credit Card, crop insurance, agri loans via NBFC partners. 1–2% referral fee. SmartKhet's risk data (crop health, yield history) enables better underwriting.</div>
+      </div>
+      <div class="mono-card">
+        <div class="mono-icon">🏢</div>
+        <div class="mono-title">B2G / FPO SaaS</div>
+        <div class="mono-desc">White-label SmartKhet for state agriculture departments, Farmer Producer Organisations. ₹50–200/farmer/year SaaS licensing. High-margin, gov. procurement.</div>
+      </div>
+      <div class="mono-card">
+        <div class="mono-icon">📡</div>
+        <div class="mono-title">Data Intelligence</div>
+        <div class="mono-desc">Anonymised crop health, soil, and yield datasets sold to commodity traders, insurance companies, and climate research orgs. ₹50L–2Cr/year data licensing.</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>📈 Unit Economics Target (Year 2)</strong>
+      CAC: ₹80/farmer (WhatsApp + gram sabha activations) · ARPU: ₹240/farmer/year · Gross Margin: 65% · LTV/CAC ratio: 9x over 3-year retention. Path to profitability at 500K active farmers (~₹12Cr ARR).
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-logo">Smart<span>Khet</span></div>
+  <div class="footer-sub">Architecture Document v1.0 · Designed by Axora</div>
+  <div style="font-family:var(--mono);font-size:10px;color:var(--sprout);letter-spacing:0.2em;margin-bottom:20px;">
+    FRONTEND · API GATEWAY · MICROSERVICES · AI/ML · DATA LAYER · CLOUD INFRA
+  </div>
+  <div class="footer-note">
+    Built for 140 million Indian farmers. Designed for rural realities. Powered by modern AI.<br>
+    "Kisan pehle, technology baad mein." — The farmer first, technology in service.
+  </div>
+</footer>
+
+</body>
+</html>
